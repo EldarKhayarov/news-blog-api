@@ -1,4 +1,5 @@
 import os
+import datetime
 
 import toml
 
@@ -38,8 +39,10 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'core',
+    'authentication',
 
     'rest_framework',
+    'rest_framework_simplejwt',
 ]
 
 MIDDLEWARE = [
@@ -81,6 +84,30 @@ DATABASES = {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
     }
+}
+
+
+# Auth settings
+
+AUTH_USER_MODEL = 'authentication.User'
+
+
+# DRF simple JWT
+# If rest_framework_simplejwt in applications
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': datetime.timedelta(minutes=30),
+    'REFRESH_TOKEN_LIFETIME': datetime.timedelta(days=3),
+}
+
+
+# REST Framework
+# If rest_framework in applications
+
+REST_FRAMEWORK = {
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
 }
 
 

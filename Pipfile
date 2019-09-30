@@ -9,6 +9,7 @@ verify_ssl = true
 django = "*"
 djangorestframework = "*"
 toml = "*"
+djangorestframework-simplejwt = "*"
 
 [requires]
 python_version = "3.7"
