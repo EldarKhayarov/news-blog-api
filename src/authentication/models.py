@@ -44,7 +44,7 @@ class User(PermissionsMixin, TimestampedModel, AbstractBaseUser):
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ('username',)
 
-    manager = UserManager()
+    objects = UserManager()
 
     class Meta:
         verbose_name = _('user')
