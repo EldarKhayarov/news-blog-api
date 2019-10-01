@@ -91,6 +91,11 @@ DATABASES = {
 
 AUTH_USER_MODEL = 'authentication.User'
 
+AUTHENTICATION_BACKENDS = (
+    'django.contrib.auth.backends.ModelBackend',
+    'authentication.backends.EmailOrUsernameModelBackend',
+)
+
 
 # DRF simple JWT
 # If rest_framework_simplejwt in applications

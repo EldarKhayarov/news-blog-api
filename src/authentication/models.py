@@ -33,7 +33,7 @@ class UserManager(BaseUserManager):
         return user
 
 
-class User(PermissionsMixin, TimestampedModel, AbstractBaseUser):
+class User(TimestampedModel, PermissionsMixin, AbstractBaseUser):
     username = models.CharField(
         _("username"), max_length=32, unique=True, db_index=True
     )
@@ -41,8 +41,8 @@ class User(PermissionsMixin, TimestampedModel, AbstractBaseUser):
     is_active = models.BooleanField(_("user is active"), default=True)
     is_staff = models.BooleanField(_("user is staff"), default=False)
 
-    USERNAME_FIELD = 'email'
-    REQUIRED_FIELDS = ('username',)
+    USERNAME_FIELD = 'username'
+    REQUIRED_FIELDS = ('email',)
 
     objects = UserManager()
 

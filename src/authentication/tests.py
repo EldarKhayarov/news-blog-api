@@ -1,11 +1,11 @@
 import json
-import datetime
-from typing import Type, Any
+from typing import Any
 
-from rest_framework.test import APITestCase
 from django.urls import reverse
+from django.contrib.auth import get_user_model
+from rest_framework.test import APITestCase
 
-from authentication.models import User
+User = get_user_model()
 
 
 CONTENT_TYPE = 'application/json'
@@ -14,6 +14,14 @@ CONTENT_TYPE = 'application/json'
 # Common methods could be used in other apps tests
 URL_GET_TOKEN = reverse('api-auth:token-obtain-pair')
 URL_REFRESH_TOKEN = reverse('api-auth:token-refresh')
+
+
+# Just user for cases
+USER = {
+    'username': 'user',
+    'password': 'f34ewf840hid9v8',
+    'email': 'user@user.com',
+}
 
 
 def make_post_request(
@@ -28,9 +36,9 @@ def make_post_request(
 
 
 def get_tokens(
-        client: Any, email: str, password: str
+        client: Any, username: str, password: str
 ) -> dict:
-    request_content = json.dumps({'email': email, 'password': password})
+    request_content = json.dumps({'username': username, 'password': password})
     return make_post_request(client, URL_GET_TOKEN, request_content)
 
 
@@ -41,21 +49,7 @@ def refresh_token(
     return make_post_request(client, URL_REFRESH_TOKEN, request_content)
 
 
-# Just users for cases
-USER = {
-    'username': 'user',
-    'password': 'f34ewf840hid9v8',
-    'email': 'user@user.com',
-}
-
-USER_NO_TOKEN = {
-    'username': 'user_no_token',
-    'password': 'f32rfewfjiu98PFD8',
-    'email': 'usernotoken@user.com',
-}
-
-
-class AuthUserTestCase(APITestCase):
+class AuthUserGetRefreshTokenTestCase(APITestCase):
 
     def setUp(self) -> None:
         self.user = User.objects.create_user(
@@ -63,22 +57,15 @@ class AuthUserTestCase(APITestCase):
             email=USER['email'],
             password=USER['password']
         )
-        self.user_no_token = User.objects.create_user(
-            username=USER_NO_TOKEN['username'],
-            password=USER_NO_TOKEN['password'],
-            email=USER_NO_TOKEN['email']
-        )
 
-        self.user_data = {}
-        self.user_no_token_data = {}
-
-        self.user_data['password'] = USER['password']
-        self.user_no_token_data['password'] = USER_NO_TOKEN['password']
+        # is's important to give unhashed password
+        self.user_data = {
+            'password': USER['password'],
+        }
 
     def test_user_get_token(self):
-        # is's important to give unhashed password
         response_content = get_tokens(
-            email=self.user.email,
+            username=self.user.username,
             password=self.user_data['password'],
             client=self.client
         )
@@ -93,7 +80,7 @@ class AuthUserTestCase(APITestCase):
         # get tokens
         get_token_response = get_tokens(
             client=self.client,
-            email=self.user.email,
+            username=self.user.username,
             password=self.user_data['password']
         )
         self.assertEqual(get_token_response['status_code'], 200)
@@ -109,3 +96,85 @@ class AuthUserTestCase(APITestCase):
         self.assert_('access' in get_refresh_response.keys())
         new_access = get_refresh_response['access']
         self.assertNotEqual(access, new_access)
+
+
+class AuthEmailOrUsernameTestCase(APITestCase):
+    """
+    Test case for `Username or Email authentication` feature.
+    """
+    def setUp(self) -> None:
+        self.user = User.objects.create_user(
+            username=USER['username'],
+            email=USER['email'],
+            password=USER['password']
+        )
+
+        # is's important to give unhashed password
+        self.user_data = {
+            'password': USER['password'],
+        }
+
+    def try_to_get_token(self, username_email: str) -> dict:
+        """
+        Trying to get token for `username_email` user.
+        :param username_email: user's username or email.
+        :return: dict with response.
+        """
+        request_data = {
+            'username': username_email,
+            'password': self.user_data['password']
+        }
+        return make_post_request(
+            client=self.client,
+            data=json.dumps(request_data),
+            path=URL_GET_TOKEN
+        )
+
+    def test_auth_username(self):
+        """
+        Right username will be given.
+        Status code must be 200.
+        :return: None
+        """
+        response = self.try_to_get_token(self.user.username)
+        self.assertEqual(response['status_code'], 200)
+
+    def test_auth_wrong_username(self):
+        """
+        Wrong username will be given.
+        Status code must be 401.
+        :return: None
+        """
+        response = self.try_to_get_token(self.user.username + 'f')
+        self.assertEqual(response['status_code'], 401)
+
+    def test_auth_email(self):
+        """
+        Right email will be given.
+        Status code must be 200.
+        :return: None
+        """
+        response = self.try_to_get_token(self.user.email)
+        self.assertEqual(response['status_code'], 200)
+
+    def test_auth_wrong_email(self):
+        """
+        Wrong email will be given.
+        Status code must be 401.
+        :return: None
+        """
+        response = self.try_to_get_token(self.user.email + 'm')
+        self.assertEqual(response['status_code'], 401)
+
+    def test_auth_wrong_password(self):
+        """
+        Wrong password.
+        Status code must be 401.
+        :return: None
+        """
+        response = get_tokens(
+            client=self.client,
+            username=self.user.email,
+            password=self.user_data['password'] + 'f'
+        )
+        self.assertEqual(response['status_code'], 401)
