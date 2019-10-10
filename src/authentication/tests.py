@@ -1,9 +1,10 @@
 import json
+from copy import copy
 from typing import Any
 
 from django.urls import reverse
 from django.contrib.auth import get_user_model
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase, APIClient
 
 User = get_user_model()
 
@@ -27,6 +28,8 @@ USER = {
 def make_post_request(
         client: Any, path: str, data: dict
 ) -> dict:
+    if type(data) != str:
+        data = json.dumps(data)
     response = client.post(path=path, data=data, content_type=CONTENT_TYPE)
 
     response_content = json.loads(response.content)
@@ -62,6 +65,7 @@ class AuthUserGetRefreshTokenTestCase(APITestCase):
         self.user_data = {
             'password': USER['password'],
         }
+        self.client = APIClient()
 
     def test_user_get_token(self):
         response_content = get_tokens(
@@ -103,6 +107,7 @@ class AuthEmailOrUsernameTestCase(APITestCase):
     Test case for `Username or Email authentication` feature.
     """
     def setUp(self) -> None:
+        self.client = APIClient()
         self.user = User.objects.create_user(
             username=USER['username'],
             email=USER['email'],
@@ -178,3 +183,171 @@ class AuthEmailOrUsernameTestCase(APITestCase):
             password=self.user_data['password'] + 'f'
         )
         self.assertEqual(response['status_code'], 401)
+
+
+class ChangePasswordTestCase(APITestCase):
+    def setUp(self) -> None:
+        self.client = APIClient()
+        self.admin_data = {
+            'username': 'admin',
+            'email': 'admin@admin.com',
+            'password': 'jiFr32jkfew'
+        }
+        self.user_data = USER
+
+        self.admin = User.objects.create_superuser(
+            **self.admin_data
+        )
+        self.user = User.objects.create_user(
+            username=self.user_data['username'],
+            email=self.user_data['email'],
+            password=self.user_data['password']
+        )
+        self.user_data['new_password'] = 'Hj32fkjfds3'
+        self.user_data['bad_new_password'] = 'password'
+        self.user_data['token'] = get_tokens(
+            client=self.client,
+            username=self.user.username,
+            password=self.user_data['password']
+        )['access']
+
+        # url type: /api/user/{username}/change_password
+        self.url = reverse('api-auth:user-change_password', kwargs={
+            'username': self.user.username
+        })
+
+    def _login(self):
+        self.client.force_authenticate(user=self.user)
+
+    def test_auth_wrong_password(self):
+        self._login()
+
+        response = make_post_request(
+            client=self.client,
+            path=self.url,
+            data={
+                'current_password': self.user_data['bad_new_password'],
+                'new_password': self.user_data['new_password'],
+            }
+        )
+
+        self.assertEqual(response['status_code'], 403, msg=response)
+
+    def test_auth_too_common_password(self):
+        self._login()
+
+        response = make_post_request(
+            client=self.client,
+            path=self.url,
+            data={
+                'current_password': self.user_data['password'],
+                'new_password': self.user_data['bad_new_password']
+            }
+        )
+
+        self.assertEqual(response['status_code'], 400)
+        self.assert_('too common' in response['non_field_errors'][0], msg=response)
+
+    def test_auth_current_new_equal_passwords(self):
+        self._login()
+
+        response = make_post_request(
+            client=self.client,
+            path=self.url,
+            data={
+                'current_password': self.user_data['password'],
+                'new_password': self.user_data['password']
+            }
+        )
+
+        self.assertEqual(response['status_code'], 400, msg=response)
+
+    def test_auth_success_changing(self):
+        self._login()
+
+        response = make_post_request(
+            client=self.client,
+            path=self.url,
+            data={
+                'current_password': self.user_data['password'],
+                'new_password': self.user_data['new_password']
+            }
+        )
+
+        self.assertEqual(response['status_code'], 200, msg=response)
+        self.assert_('Set' in response['detail'], msg=response)
+
+    def test_auth_admin_try(self):
+        self.client.force_login(self.admin)
+
+        response = make_post_request(
+            client=self.client,
+            path=self.url,
+            data={
+                'current_password': self.user_data['password'],
+                'new_password': self.user_data['new_password']
+            }
+        )
+
+        self.assertEqual(response['status_code'], 401, 'code: ' + str(response['status_code']))
+
+    def test_auth_unauth_try(self):
+        self.client.logout()
+        response = make_post_request(
+            client=self.client,
+            path=self.url,
+            data={
+                'current_password': self.user_data['password'],
+                'new_password': self.user_data['new_password']
+            }
+        )
+        self.assertEqual(response['status_code'], 401, msg=response)
+
+
+class RegisterTestCase(APITestCase):
+    def setUp(self) -> None:
+        self.client = APIClient()
+        self.url = reverse('api-auth:register')
+        self.user_data = USER
+
+    def test_auth_success_register(self):
+        response = make_post_request(
+            client=self.client,
+            path=self.url,
+            data=self.user_data
+        )
+
+        self.assertEqual(response['status_code'], 201, msg=response)
+
+    def test_auth_invalid_password(self):
+        data = copy(self.user_data)
+        data['password'] = 'jk'
+        response = make_post_request(
+            client=self.client,
+            path=self.url,
+            data=data
+        )
+
+        self.assertEqual(response['status_code'], 400, msg=response)
+
+    def test_auth_invalid_email(self):
+        data = copy(self.user_data)
+        data['email'] = 'useruser.com'
+        response = make_post_request(
+            client=self.client,
+            path=self.url,
+            data=data
+        )
+
+        self.assertEqual(response['status_code'], 400, msg=response)
+
+    def test_auth_no_username(self):
+        data = copy(self.user_data)
+        data['username'] = None
+        response = make_post_request(
+            client=self.client,
+            path=self.url,
+            data=data
+        )
+
+        self.assertEqual(response['status_code'], 400, msg=response)
