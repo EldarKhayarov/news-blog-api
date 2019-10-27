@@ -1,5 +1,5 @@
 # Just API for news blog on Django
-##Requirements
+## Requirements
  - Pipenv
  - settings.toml file with
    ``SECRET_KEY, 
@@ -12,5 +12,5 @@ USE_L10N,
 USE_TZ``
 at root.
 
-##Start server
+## Start server
 Install packages via `pipenv` and start server: ``python3 manage.py runserver``
