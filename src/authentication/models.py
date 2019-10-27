@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.urls import reverse
 from django.contrib.auth.models import (
     AbstractBaseUser, BaseUserManager, PermissionsMixin
 )
@@ -58,3 +59,9 @@ class User(TimestampedModel, PermissionsMixin, AbstractBaseUser):
 
     def get_short_name(self):
         return self.username
+
+    def get_absolute_url(self):
+        return reverse(
+            'api-auth:user-detail',
+            kwargs={'username': self.username}
+        )

@@ -10,6 +10,7 @@ django = "*"
 djangorestframework = "*"
 toml = "*"
 djangorestframework-simplejwt = "*"
+unidecode = "*"
 
 [requires]
 python_version = "3.7"

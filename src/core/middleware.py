@@ -6,5 +6,6 @@ from django.shortcuts import HttpResponsePermanentRedirect
 class NoTrailingSlashPathMiddleware(MiddlewareMixin):
     def process_request(self, request):
         if getattr(settings, 'REMOVE_SLASH', False):
-            if request.path.endswith('/'):
-                return HttpResponsePermanentRedirect(request.path[:-1])
+            if '/admin' not in request.path and request.path != '/':
+                if request.path.endswith('/'):
+                    return HttpResponsePermanentRedirect(request.path[:-1])

@@ -19,6 +19,7 @@ from django.urls import path, include
 
 api_urlpatterns = [
     path('', include('authentication.urls', namespace='api-auth')),
+    path('', include('articles.urls', namespace='articles')),
 ]
 
 urlpatterns = [

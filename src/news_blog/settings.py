@@ -40,6 +40,7 @@ INSTALLED_APPS = [
 
     'core',
     'authentication',
+    'articles',
 
     'rest_framework',
     'rest_framework_simplejwt',
@@ -53,8 +54,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-
-    'core.middleware.NoTrailingSlashPathMiddleware',
 ]
 
 ROOT_URLCONF = 'news_blog.urls'
@@ -149,12 +148,6 @@ USE_I18N = config.get('USE_I18N')
 USE_L10N = config.get('USE_L10N')
 
 USE_TZ = config.get('USE_TZ')
-
-
-# Routing
-
-APPEND_SLASH = False
-REMOVE_SLASH = True
 
 
 # Static files (CSS, JavaScript, Images)
