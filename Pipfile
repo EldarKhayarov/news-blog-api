@@ -11,6 +11,7 @@ djangorestframework = "*"
 toml = "*"
 djangorestframework-simplejwt = "*"
 unidecode = "*"
+django-cors-headers = "*"
 
 [requires]
 python_version = "3.7"

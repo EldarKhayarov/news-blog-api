@@ -6,11 +6,9 @@ from .models import Comment, Article, Resource
 
 
 class AuthorSerializer(serializers.ModelSerializer):
-    url = serializers.URLField(source='get_absolute_url')
-
     class Meta:
         model = get_user_model()
-        fields = ('username', 'url')
+        fields = ('username',)
 
 
 class ResourceBaseSerializer(serializers.ModelSerializer):
@@ -159,7 +157,7 @@ class CommentBaseSerializer(serializers.ModelSerializer):
     """
     Base comment serializer. Not for use.
     """
-    author = AuthorSerializer(read_only=True)
+    author = AuthorSerializer()
     # Resources field required
 
     _model = Comment
@@ -222,7 +220,7 @@ class ArticleDetailBaseSerializer(serializers.ModelSerializer):
             'resources',
             'comments',
         )
-        read_only_fields = ('author', 'created_at', 'comments')
+        read_only_fields = ('created_at', 'comments')
 
 
 class ArticleCreateRetrieveSerializer(
@@ -246,16 +244,12 @@ class ArticleUpdateSerializer(
 
 
 class ArticleListSerializer(serializers.ModelSerializer):
-    url = serializers.URLField(
-        source='get_absolute_url'
-    )
-
     class Meta:
         model = Article
         fields = (
             'title',
             'description',
             'preview_image',
-            'url',
+            'slug',
         )
         read_only_fields = fields

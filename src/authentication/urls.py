@@ -11,7 +11,7 @@ from .views import (
 app_name = 'authentication'
 
 router = SimpleRouter()
-router.register('user', UserViewSet, base_name='user')
+router.register('user', UserViewSet, basename='user')
 
 
 urlpatterns = [

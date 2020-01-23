@@ -10,7 +10,7 @@ from .views import (
 app_name = 'article'
 
 router = SimpleRouter()
-router.register('article', ArticleViewSet, base_name='article')
+router.register('article', ArticleViewSet, basename='article')
 
 
 urlpatterns = router.urls + [
